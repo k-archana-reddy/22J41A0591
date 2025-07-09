@@ -1,9 +1,4 @@
-const express = require('express');
 const axios = require('axios');
-const app = express();
-const port = 3000;
-
-app.use(express.json());
 
 const validStacks = ['backend', 'frontend'];
 const validLevels = ['debug', 'info', 'warn', 'error', 'fatal'];
@@ -14,26 +9,11 @@ const validPackages = {
 
 const apiUrl = 'http://20.244.56.144/evaluation-service/logs';
 
-function logMiddleware(req, res, next) {
+async function logMiddleware(req, res, next) {
   const { stack, level, package: pkg, message } = req.body;
 
   if (!stack || !level || !pkg || !message) {
     console.log('Missing one or more required log fields');
-  } else {
-    console.log(`[LOG] stack: ${stack}, level: ${level}, package: ${pkg}, message: ${message}`);
-  }
-
-  next();
-}
-
-app.get('/', (req, res) => {
-  res.send('Log API is running. Use POST /logs to send logs.');
-});
-
-app.post('/logs', logMiddleware, async (req, res) => {
-  const { stack, level, package: pkg, message } = req.body;
-
-  if (!stack || !level || !pkg || !message) {
     return res.status(400).json({ message: 'Missing fields' });
   }
 
@@ -51,6 +31,8 @@ app.post('/logs', logMiddleware, async (req, res) => {
     return res.status(400).json({ message: 'Invalid package for this stack' });
   }
 
+  console.log(`[LOG] stack: ${stack}, level: ${level}, package: ${pkg}, message: ${message}`);
+
   try {
     const response = await axios.post(apiUrl, req.body, {
       headers: { 'Content-Type': 'application/json' }
@@ -63,8 +45,6 @@ app.post('/logs', logMiddleware, async (req, res) => {
       res.status(500).json({ message: 'API connection error' });
     }
   }
-});
+}
 
-app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
-});
+module.exports = logMiddleware;
